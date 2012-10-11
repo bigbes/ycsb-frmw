@@ -1,0 +1,131 @@
+DB = tarantool, redis
+
+tarantool = Tarantool, b
+redis = Redis, r
+
+[OPS]
+INSERT = o
+READ = <
+SCAN = ^
+DELETE = > 
+UPDATE = v
+
+[threads]
+begin = 1
+end = 40
+step = 2
+
+[WL]
+	[[wla_load]]
+	name = workloada 
+	type = load
+	_type = time
+	thread = 7
+	size = other
+		[[[_size]]]
+		opcount = 1000000
+		reccount = 1000000
+		[[[print]]]
+		la_time = True
+		th_time = True
+
+	[[wla_run]]
+	name = workloada 
+	type = run
+	_type = time
+	thread = 7
+	size = other
+		[[[_size]]]
+		opcount = 1000000
+		reccount = 1000000
+		[[[print]]]
+		la_time = True
+		th_time = True
+	
+	[[wlb_run]]
+	name = workloadb
+	type = run
+	_type = time
+	thread = 7
+	size = other
+		[[[_size]]]
+		opcount = 1000000
+		reccount = 1000000
+		[[[print]]]
+		la_time = True
+		th_time = True
+
+	[[wlc_run]]
+	name = workloadc
+	type = run
+	_type = time
+	thread = 7
+	size = other
+		[[[_size]]]
+		opcount = 1000000
+		reccount = 1000000
+		[[[print]]]
+		la_time = True
+		th_time = True
+
+	[[wlf_run]]
+	name = workloadf
+	type = run
+	_type = time
+	thread = 7
+	size = other
+		[[[_size]]]
+		opcount = 1000000
+		reccount = 1000000
+		[[[print]]]
+		la_time = True
+		th_time = True
+
+	[[wld_run]]
+	name = workloadd
+	type = run
+	_type = time
+	thread = 7
+	size = other
+		[[[_size]]]
+		opcount = 1000000
+		reccount = 1000000
+		[[[print]]]
+		la_time = True
+		th_time = True
+
+	#[[wle_run]]
+	#name = workloade
+	#type = run
+	#_type = time
+	#thread = 7
+	#size = other
+	#	[[[_size]]]
+	#	opcount = 100000
+	#	reccount = 1000000
+	#	[[[print]]]
+	#	la_time = True
+	#	th_time = True
+
+
+[TEST]
+	[[test_db]]
+	begin = 10000
+	end = 20000000
+	step = 10000
+
+#[DIR]
+#	dir_ycsb = "/home/bigbes/src/ycsb-0.1.4/"
+#	dir_ycsb_bin = "bin/"
+#	dir_ycsb_wl = "workloads/"
+#	file_ycsb_cfg = "ycbs.conf"
+#	file_ycsb_json = "ycsb_export.json"
+
+#Not yet implemented
+[NET_DB]
+host = localhost
+port = 9000
+
+[NET_YCSB]
+host = localhost 
+port = 9001
