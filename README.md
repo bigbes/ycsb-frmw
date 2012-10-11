@@ -1,4 +1,4 @@
 ycsb-frmw
 =========
 
-YCSB framework for automated testing
+YCSB based framework for automated testing
