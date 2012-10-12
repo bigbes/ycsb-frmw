@@ -70,12 +70,13 @@ def main(_db_spec):
 		elif not data[1] in _db_spec:
 			result = "FAIL WrongDatabase"
 		else:
-			result = { 		'run'	: (lambda x : "OK" if not _db_spec[x].start() 			else "FAIL CantStart"),
-							'stop'	: (lambda x : "OK" if not _db_spec[x].stop() 			else "FAIL CantStop"),
-							'init'	: (lambda x : "OK" if not _db_spec[x].init() 			else "FAIL CantInit"),
-							'ss'	: (lambda x : "OK" if not _db_spec[x].save_snapshot() 	else "FAIL CantSaveSnap"),
-							'ls'	: (lambda x : "OK" if not _db_spec[x].load_snapshot() 	else "FAIL CantLoadSnap"),
-							'fdb'	: (lambda x : "OK" if not _db_spec[x].flush() 			else "FAIL CantFlush")
+			result = { 		
+					'run'	: (lambda x : "OK" if not _db_spec[x].start() 			else "FAIL CantStart"),
+					'stop'	: (lambda x : "OK" if not _db_spec[x].stop() 			else "FAIL CantStop"),
+					'init'	: (lambda x : "OK" if not _db_spec[x].init() 			else "FAIL CantInit"),
+					'ss'	: (lambda x : "OK" if not _db_spec[x].save_snapshot() 	else "FAIL CantSaveSnap"),
+					'ls'	: (lambda x : "OK" if not _db_spec[x].load_snapshot() 	else "FAIL CantLoadSnap"),
+					'fdb'	: (lambda x : "OK" if not _db_spec[x].flush() 			else "FAIL CantFlush")
 					 }.get(data[0], undefined)(data[1])
 		conn.sendall(result)
 		conn.close()

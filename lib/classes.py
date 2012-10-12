@@ -15,10 +15,10 @@ class Workload:
 		this.args = args
 
 	def gen_args(this):
-		reduce(lambda x,y:x+y, map(lambda x:" -p {0}={1}".format(x[0],x[1]) ,this.args.items()))
+		return reduce(lambda x,y:x+y, map(lambda x:" -p {0}={1}".format(x[0],x[1]) ,this.args.items()))
 
 	def gen_params(this):
-		reduce(lambda x,y:x+y, map(lambda x:" -p {0}={1}".format(x[0],x[1]) ,this.params.items()))
+		return reduce(lambda x,y:x+y, map(lambda x:" -p {0}={1}".format(x[0],x[1]) ,this.params.items()))
 	
 	def __str__(this):
 		return "Workload(%r)" % (str(this.__dict__))
@@ -29,25 +29,33 @@ class Answers:
 	def __init__(this):
 		this._hash = {}
 
-	def insert(this, thread, data):
-		if thread in this._hash:
-			this._hash[thread].append(data)
+	def insert(this, db, thread, data):
+		# print str(db)+" "+str(thread)
+		if str(db)+" "+str(thread) in this._hash:
+			this._hash[str(db)+" "+str(thread)].append(data)
 		else:
-			this._hash[thread] = [data]
+			this._hash[str(db)+" "+str(thread)] = [data]
 	
-	def get(this, thread):
-		return this._hash[thread]
+	def get(this, db, thread):
+		return this._hash[str(db)+" "+str(thread)]
 
 	def __str__(this):
 		return str(this._hash)
 
+	def merge(this, ans2):
+		for i, j in ans2._hash.iteritems():
+			i = i.split()
+			for j1 in j:
+				this.insert(i[0], i[1], j1)
+
 	__repr__ = __str__
 
 class DB_client:
-	def __init__(this, name, host):
+	def __init__(this, name, host, port, _type):
 		this.name = name
 		this.host = host
 		this.port = int(port)
+		this._type = _type 
 
 	def set_port(this, _port):
 		this.port = int(_port)
@@ -70,12 +78,12 @@ class DB_client:
 			pprint(">> " + str(answer))
 		else:
 			answer = 0;
-		return str(answer)
-		
+		return str(answer)	
 	
 	def __str__(this):
-		return str("DB_Client " + this.name + 
-				" " + this.host + ":" + str(this.port))
+		return str("DB_Client " + this.name 
+				+ " " + this._type + " " 
+				+ this.host + ":" + str(this.port))
 
 	__repr__ = __str__
 
