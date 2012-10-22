@@ -78,9 +78,9 @@ def main(_db_spec):
 					'ls'	: (lambda x : "OK" if not _db_spec[x].load_snapshot() 	else "FAIL CantLoadSnap"),
 					'fdb'	: (lambda x : "OK" if not _db_spec[x].flush() 			else "FAIL CantFlush")
 					 }.get(data[0], undefined)(data[1])
+		sleep(2)
 		conn.sendall(result)
 		conn.close()
-		sleep(3)
 
 if __name__ == '__main__':
 	_db_class, _db_spec = init()

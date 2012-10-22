@@ -63,11 +63,9 @@ class Tarantool(DB):
 		print ">>Start Tarantool"
 		self._run = Popen(shlex.split("./"+self._exe))
 		print ">>Tarantool PID:", self._run.pid
-		sleep(3)
 
 	def stop(self):
 		if self._run:
 			self._run.terminate()
 			print ">>Stop Tarantool"
 		self._run = None
-		sleep(3)
