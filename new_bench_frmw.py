@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import subprocess
+import sys
 import argparse
 import shlex
 import shutil
@@ -30,6 +32,18 @@ class YCSB:
 		return "YCSB(%r)" % (str(this.__dict__))
 	__repr__ = __str__
 
+class __Answer:
+	def __init__(self, wl):
+		self.wl = wl
+		self.base = []
+	
+	def add_file(self, filename, db, op):
+		self.base.append((filename, db, op))
+	
+	def __str__(this):
+		return "__Answer(%r)" % (str(this.__dict__))
+	__repr__ = __str__	
+
 def parse_cfg():
 	config = ConfigObj(args.file)
 	ops = config['OPS'].keys()	
@@ -48,17 +62,18 @@ def parse_cfg():
 				) 
 		)
 	dbs = []
-	port = config['NET_DB']['port']
 	for i, j in config['NET_DB'].iteritems():
 		if isinstance(j, dict):
-			temp = DB_client(i, j['host'], port, j['_type'])
+			port = j['serv_port']
+			db_port = j['db_port']
+			temp = DB_client(i, j['host'], port, db_port, j['_type'])
 			dbs.append(temp)
 	ycsb = YCSB()
 	for i, j in config['DIR'].iteritems():
 		setattr(ycsb, i, j)
 	ycsb._f_json = _args['exportfile']
-	lol_dir = config['_dir']
-	return ops, wl, dbs, ycsb, _args, lol_dir
+	out_dir = config['_dir']
+	return ops, wl, dbs, ycsb, _args, out_dir
 
 def check_arguments():
 	global args
@@ -103,7 +118,7 @@ def __run(wl, thread, db):
 	os.chdir(_new_root)
 	progr = shlex.split("bin/ycsb " + wl.type + " " + db._type 
 			+ " -P " + ycsb._d_wl + wl.wl + wl.gen_params() 
-			+ " -threads " + str(thread) + " -s " + wl.gen_args())
+			+ " -threads " + str(thread) + " -s " + wl.gen_args() + db.gen_args())
 	print progr
 	YCSB = Popen(progr, stdout = PIPE, stderr = PIPE)
 	import_stderr(parse_stderr(YCSB.communicate()[1]))
@@ -118,7 +133,7 @@ def _load_wl(wl, db):
 	temp = Workload(
 			name = '',
 			type = 'load',
-			threads = '6',
+			threads = '15',
 			wl = 'workloada',
 			params = wl.params,
 			args = wl.args
@@ -154,81 +169,174 @@ def _run_thread(wl, dbs, times = 1):
 		db.stop()
 	return ans
 
-def plot_latency(wl, Ans, DBS, OPS, _dir):
-	os.system('rm -fr "%s"' % _dir)
-	os.mkdir(_dir)
-	os.chdir(_dir)
-	table = { str(i) : { j.name : {} for j in DBS } for i in (wl.threads if isinstance(wl.threads, xrange) else xrange(wl.threads, wl.threads + 1, 1)) }
+def plot_latency(wl, Ans, DBS, OPS):
+	table = { str(i) : { j.name : {} for j in DBS } for i in 
+			(wl.threads if isinstance(wl.threads, xrange) else [wl.threads]) }
+	table1 = { i.name : {} for i in DBS }
+	local = __Answer(wl)
 	for i2 in OPS:
-		files = []
 		for i1 in DBS:
-			for i3 in wl.threads if isinstance(wl.threads, xrange) else xrange(wl.threads, wl.threads + 1, 1):
+			name = ' '
+			for i3 in (wl.threads if isinstance(wl.threads, xrange) else [wl.threads]):
 				ar = Ans.get(i1.name, i3)
 				if not i2+" AvLatency" in ar[0].keys():
 					continue
-
 				if isinstance(wl.threads, xrange):
-					lol = []
-					for i in ar:
-						print i
-						lol.append(i[i2+" AvLatency"])
-					table[str(i3)][i1.name][i2] = average(lol)
-					#table[str(i3)][i1.name][i2] = average(map(lambda x: x[unicode(i2+" AvLatency")], ar))
+					table[str(i3)][i1.name][i2] = average(map(lambda x: x[i2+" AvLatency"], ar))
 				else:
-					time = sorted(reduce(lambda x, y: set(x).union(set(y)), map(lambda x: x['series '+i2].keys(), ar)), key=int)
-					latency = map(lambda z: average(z), zip(*map(lambda x: map(lambda y: x['series '+i2][y], sorted(x['series '+i2].keys(), key=int)), ar)))
+					time = sorted(reduce(lambda x, y: set(x).union(set(y)), 
+						map(lambda x: x['series '+i2].keys(), ar)), key=int)
+					latency = map(lambda z: average(z), zip(*map(lambda x: map(lambda y: x['series '+i2][y], 
+						sorted(x['series '+i2].keys(), key=int)), ar)))
 					table[str(i3)][i1.name][i2] = zip(time, latency)
-					name = "%(name)s_%(db)s_%(op)s_%(type)%s.data" % 
-							{ "name" 	: wl.name,
-							  "db" 		: i1.name,
-							  "op" 		: i2,
-							  "type" 	: "time"}
+					
+					name = "%(name)s_%(db)s_%(op)s_time.data" % { 
+							  	"name" 	: wl.name,
+							  	"db" 	: i1.name,
+							  	"op" 	: i2
+								}
 					fd = open(name ,"w")
-					files.append(name)
 					for i in table[str(i3)][i1.name][i2]:
-						fd.write(str(i[0])+" "+str(i[1]))
-		if len(files) != 0:
-			
-
-	if isinstance(wl.threads, xrange):
-		table1 = { i.name : {} for i in DBS }
-		for i2 in OPS:
-			files = []
-			for i1 in DBS:
-				if not table[table.keys()[0]][i1.name].has_key(i2):
+						fd.write(str(int(i[0])/1000)+" "+str(i[1])+"\n")
+					local.add_file(name, i1.name, i2)
+					fd.close()
+			if isinstance(wl.threads, xrange):
+				if not i2 in table[str(wl.threads[0])][i1.name]:
 					continue
-				table1[i1.name][i2] = zip([k for k in wl.threads], map(lambda x: x[i1.name][i2], map(lambda y: table[y], sorted(table.keys(),key=int))))
-				fd = open("%(name)s_%(db)s_%(op)s_%(type)s.data" % 
-						{ "name" 	: wl.name,
-						  "db" 		: i1.name,
-						  "op" 		: i2,
-						  "type" 	: "thr-range"}, "w")
+				table1[i1.name][i2] = zip([k for k in wl.threads], map(lambda x: x[i1.name][i2], 
+					map(lambda y: table[y], sorted(table.keys(),key=int))))
+				name = "%(name)s_%(db)s_%(op)s_thr-range.data" % { 
+							"name" 	: wl.name,
+						  	"db" 	: i1.name,
+						  	"op" 	: i2
+							}
+				fd = open(name, "w")
 				for i in table1[i1.name][i2]:
-					fd.write(str(i[0])+" "+str(i[1]))
-	table = table1
-	os.chdir('..')
-	return table
+					fd.write(str(i[0])+" "+str(i[1])+"\n")
+				local.add_file(name, i1.name, i2)
+				fd.close()
+	return (table1 if isinstance(wl.threads, xrange) else table), local
 
-def plot_throughput(wl, Ans, DBS, OPS, _dir):
-	pass
+def plot_throughput(wl, Ans, DBS, OPS):
+	table = { str(i) : { j.name : 0 for j in DBS} for i in 
+			(wl.threads if isinstance(wl.threads, xrange) else [wl.threads]) }
+	table1 = {i.name : 0 for i in DBS}
+	local = __Answer(wl)
+	for i1 in DBS:
+		name = ' '
+		for i2 in (wl.threads if isinstance(wl.threads, xrange) else [wl.threads]):
+			ar = Ans.get(i1.name, i2)
+			if isinstance(wl.threads, xrange):
+				table[str(i2)][i1.name] = average(map(lambda x: x["OVERALL Throughput"], ar))
+			else:
+				time = sorted(reduce(lambda x, y: set(x).union(set(y)), 
+					map(lambda x: x['throughput'].keys(), ar)), key=int)
+				throughput = map(lambda z: average(z), zip(*map(lambda x: map(lambda y: x['throughput'][y], 
+					sorted(x['throughput'].keys(), key=int)), ar)))
+				table[str(i2)][i1.name] = zip(time, throughput)
+
+				name = "%(name)s_%(db)s_throughput_time.data" % { 
+						  	"name" 	: wl.name,
+						  	"db" 	: i1.name,
+							}
+				fd = open(name ,"w")
+				for i in table[str(i2)][i1.name]:
+					fd.write(str(int(i[0]))+" "+str(i[1])+"\n")
+				local.add_file(name, i1.name, i2)
+				fd.close()
+		if isinstance(wl.threads, xrange):
+			table1[i1.name] = zip([k for k in wl.threads], map(lambda x: x[i1.name], 
+				map(lambda y: table[y], sorted(table.keys(), key=int))))
+			name = "%(name)s_%(db)s_throughput_thr-range.data" % { 
+						"name" 	: wl.name,
+					  	"db" 	: i1.name,
+						}
+			fd = open(name, "w")
+			for i in table1[i1.name]:
+				fd.write(str(i[0])+" "+str(i[1])+"\n")
+			local.add_file(name, i1.name, i2)
+			fd.close()
+	return (table1 if isinstance(wl.threads, xrange) else table), local
 
 def save_dump(wl, ans, _str):
 	f = open(_str+"_hash_dump_wl", 'w')
 	pickle.dump(wl, f)
-	open(_str+"_hash_dump", 'w').write(json.dumps(ans._hash))
-	pprint(ans._hash, open(_str+"_repr_dump", 'w'))
+	f.close()
+
+	f = open(_str+"_hash_dump", 'w')
+	f.write(json.dumps(ans._hash))
+	f.close()
+	
+	f = open(_str+"_repr_dump", 'w')
+	pprint(ans._hash, f)
+	f.close()
+
+def gen_gnuplot_files_latency(_ans, OPS):
+	wl = _ans.wl
+	for i in OPS:
+		t_ans = filter(lambda x: x[2] == i, _ans.base)
+		if len(t_ans) == 0:
+			continue
+		name = "%(name)s_%(op)s_%(type)s" % {
+				"name" 	: wl.name,
+				"op"	: i,
+				"type"  : ('thr-range' if isinstance(wl.threads, xrange) else 'time')
+				}
+		title = ("Loading " if wl.type == 'load' else "Running ")
+		title += wl.wl + " "
+		title += "on " + i + " test. "
+		title += (str(wl.threads) + ' threads ' if not isinstance(wl.threads, xrange) else ' ')
+		title += 'with ' + ((str(wl.params['operationcount'])+' operations') if wl.type == 'run' else (str(wl.params['recordcount'])+' records'))
+		pprint(name+'\n')
+		pprint(title+'\n')
+		plotfile = Plot(name+'.plot', name, _format='png').set_title(title, 
+				'threads(pcs)' if isinstance(wl.threads, xrange) else 'time(seconds)',
+				'latency(usec)'
+				)
+		for i in t_ans:
+			plotfile.add_data(i[0], i[1])
+		plotfile.gen_file()
+
+def gen_gnuplot_files_throughput(_ans, OPS):
+	wl = _ans.wl
+	name = "%(name)s_%(type)s" % {
+			"name" 	: wl.name,
+			"type"  : ('throughput_thr-range' if isinstance(wl.threads, xrange) else 'throughput_time')
+			}
+	title = ("Loading " if wl.type == 'load' else "Running ")
+	title += wl.wl + " "
+	title += (str(wl.threads) + ' threads ' if not isinstance(wl.threads, xrange) else ' ')
+	title += 'with ' + ((str(wl.params['operationcount'])+' operations') if wl.type == 'run' else (str(wl.params['recordcount'])+' records'))
+	pprint(name+'\n')
+	pprint(title+'\n')
+	plotfile = Plot(name+'.plot', name, _format='png').set_title(title, 
+			'threads(pcs)' if isinstance(wl.threads, xrange) else 'time(seconds)',
+			'throughput(ops/sec)'
+			)
+	for i in _ans.base:
+		plotfile.add_data(i[0], i[1])
+	plotfile.gen_file()
+
+
+
 if __name__ == '__main__':
 	check_arguments()
-	OPS, WL, DBS, ycsb, ARGS, lol_dir = parse_cfg()
+	OPS, WL, DBS, ycsb, ARGS, out_dir = parse_cfg()
 	pprint(DBS)
 	for i in WL:
 		ans = [] 
 		if isinstance(i.threads, xrange):
-			ans = _run_thread(i, DBS, 2)
+			ans = _run_thread(i, DBS, 5)
 		else:
-			ans = _run_time(i, DBS, 2)
+			ans = _run_time(i, DBS, 5)
 		save_dump(i, ans, time.strftime("%Y%m%d_%H%M%S"))
-		plot_latency(i, ans, DBS, OPS, lol_dir)
-#		plot_threads(wl, ans, DBS, OPS)
-
-	#pprint(ans._hash)
+		try:
+			os.mkdir(out_dir)
+		except OSError:
+			pass
+		os.chdir(out_dir)
+		lol, _ans = plot_latency(i, ans, DBS, OPS)
+		gen_gnuplot_files_latency(_ans, OPS)
+		lol, _ans = plot_throughput(i, ans, DBS, OPS)
+		gen_gnuplot_files_throughput(_ans, OPS)
+		os.chdir('..')

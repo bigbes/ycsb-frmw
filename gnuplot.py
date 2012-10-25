@@ -2,17 +2,17 @@
 
 from pprint import pprint
 
-header = """set output %(output)s
+header = """set output '%(output)s'
 set ytics border in scale 1,0.5 mirror norotate offset character 0,0,0
 set title "%(title)s"
 set xlabel "%(xlabel)s"
 set ylabel "%(ylabel)s"
 """
 
-terminal_png = """set terminal png nocrop enhanced size 1024.600 fon Arial,9
+terminal_png = """set terminal png nocrop enhanced size 1024.600 fon Arial 9
 """
 
-terminal_svg = """set terminal svg enhanced size 1024,600 fname 'Arial' fsize 9
+terminal_svg = """set terminal svg enhanced size 2048,600 fname 'Arial' fsize 9
 """
 
 _xrange = """set xrange [0 : %(end)f]
@@ -21,7 +21,10 @@ _xrange = """set xrange [0 : %(end)f]
 _yrange = """set yrange [0 : %(end)f]
 """
 
-_plot = """\t'%(file)s' using 1:2 with lines t "%(title)s", \\
+_plot = """\t'%(file)s' using 1:2 title "%(title)s" with lines \\
+"""
+
+__plot = """\t'%(file)s' using 1:2 with lines t "%(title)s", \\
 \t'%(file)s' using 1:2:2 with labels notitle"""
 
 _obj = { 'svg' : terminal_svg,
@@ -40,9 +43,8 @@ _obj = { 'svg' : terminal_svg,
 #	set ylabel "fuck yaxis"
 #	
 #	plot    'file1.data' using 1:2 with lines t "tarantool", \
-#	        'file1.data' using 1:2:2 with labels notitle, \
-#	        'file2.data' using 1:2 with lines t "redis", \
-#	        'file2.data' using 1:2:2 with labels notitle
+#	        'file2.data' using 1:2 with lines t "redis"
+
 
 class Plot:
 	def __init__(self, _file, output, _format = 'svg'):
@@ -78,6 +80,7 @@ class Plot:
 		return self
 
 	def gen_file(self):
+		pprint(self.data)
 		f = '\nplot '
 		for i in self.data[0:-1]:
 			f += _plot % {"file" : str(i[0]), "title" : str(i[1])} + ', \\\n'

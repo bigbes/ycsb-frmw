@@ -51,10 +51,23 @@ class Answers:
 	__repr__ = __str__
 
 class DB_client:
-	def __init__(this, name, host, port, _type):
+	params = { 	
+			#'tarantool' : { 'host' : 'tnt.host'  , 'port' : 'tnt.port'  },
+			#'redis'		: { 'host' : 'redis.host', 'port' : 'redis.port'}
+			'tarantool' : ' -p tnt.host=%(host)s -p tnt.port=%(port)d ',
+			'redis' 	: ' -p redis.host=%(host)s -p redis.port=%(port)d '
+			}
+	def gen_args(self):
+		return self.params[self._type] % {
+				'host' : self.host,
+				'port' : self.db_port
+				}
+
+	def __init__(this, name, host, port, db_port, _type):
 		this.name = name
 		this.host = host
 		this.port = int(port)
+		this.db_port = int(db_port)
 		this._type = _type 
 
 	def set_port(this, _port):
