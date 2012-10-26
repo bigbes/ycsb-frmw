@@ -9,18 +9,17 @@ from time import sleep, time
 import fileinput
 
 class Redis(DB):
-	_dir = "/home/bigbes/bench/rds/"
 	_exe = "redis-server"
 	_cli = "redis-cli"
 	_cnf = "redis.conf"
 	_log = "redis.log"
 
-	_run = None
 	_clean = [".rdb", ".aof", ".log"]
 
-	def __init__(self):
-		pass
-
+	def __init__(self, _dir):
+		self._dir = _dir
+		self._run = None
+		self.port = "3679"
 	def __del__(self):
 		self.stop()
 
@@ -31,7 +30,8 @@ class Redis(DB):
 
 	def flush_db(self):
 		if self._run:
-			Popen(shlex.split(self._dir+self._cli_dir+self._cli+" \"flushall\"")).wait()
+			Popen(shlex.split(self._dir+self._cli_dir+self._cli+" -p "
+				+self.port+" \"flushall\"")).wait()
 		else:
 			print "<<Start Redis, Please"
 
@@ -40,7 +40,8 @@ class Redis(DB):
 			print "<<Start Redis, Please"
 			return -1
 		ts = 0; te = 0;
-		Popen(shlex.split(self._dir+self._cli_dir+self._cli+" \"save\"")).wait()
+		Popen(shlex.split(self._dir+self._cli_dir+self._cli+" -p "
+			+self.port+" \"save\"")).wait()
 		fi = fileinput.input(self._dir+self._exe_dir+self._log)
 		for line in fi:
 			if line.find("Starting DB saving") != -1:
@@ -71,13 +72,13 @@ class Redis(DB):
 	@chroot_
 	def start(self):
 		if self._run:
-			return
-		print ">>Start Redis"
+			print "Redis already started"
+		print ">>Starting Redis"
 		self._run = Popen(shlex.split("./"+self._exe+" "+self._cnf))
 		print ">>Redis PID:", self._run.pid
 
 	def stop(self):
 		if self._run:
-			print ">>Stop Redis"
+			print ">>Stopping Redis"
 			self._run.terminate()
 		self._run = None

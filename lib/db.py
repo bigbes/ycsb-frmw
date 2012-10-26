@@ -48,6 +48,9 @@ class DB:
 	def set_dir(this, _dir):
 		this._dir = _dir
 	
+	def set_port(self, port):
+		self.port = int(port)
+	
 	def init():
 		pass
 	

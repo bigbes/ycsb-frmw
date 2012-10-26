@@ -9,17 +9,17 @@ from time import sleep, time
 import fileinput
 
 class Tarantool(DB):
-	_dir = "/home/bigbes/bench/tnt-master"
 	_exe = "tarantool_box"
 	_cli = "tarantool"
 	_cnf = "tarantool.cfg"
 	_log = "tarantool.log"
 
-	_run = None
 	_clean = [".snap", ".xlog", ".log"]
 
-	def __init__(self):
-		pass
+	def __init__(self, _dir):
+		self._dir = _dir
+		self._run = None
+		self.port = "33013"
 
 	def __del__(self):
 		self.stop()
@@ -32,14 +32,16 @@ class Tarantool(DB):
 
 	def flush_db(self):
 		if self._run:
-			Popen(shlex.split(self._dir+self._cli+" \"lua box.space[0]:truncate()\"")).wait()
+			Popen(shlex.split(self._dir+self._cli+" -p "
+				+self.port+" \"lua box.space[0]:truncate()\"")).wait()
 		else:
 			print "<<Start Tarantool, Please"
 	
 	@timet
 	def save_snapshot(self):
 		if self._run:
-			Popen(shlex.split(self._dir+self._cli+" \"save snapshot\"")).wait()
+			Popen(shlex.split(self._dir+self._cli+" -p "
+				+self.port+" \"save snapshot\"")).wait()
 		else:
 			print "<<Start Tarantool, Please"
 
@@ -60,12 +62,12 @@ class Tarantool(DB):
 	def start(self):
 		if self._run:
 			return
-		print ">>Start Tarantool"
+		print ">>Starting Tarantool"
 		self._run = Popen(shlex.split("./"+self._exe))
 		print ">>Tarantool PID:", self._run.pid
 
 	def stop(self):
 		if self._run:
 			self._run.terminate()
-			print ">>Stop Tarantool"
+			print ">>Stopping Tarantool"
 		self._run = None

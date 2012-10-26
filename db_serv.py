@@ -41,15 +41,15 @@ def init():
 	# Importing db classes from lib
 	__import__("lib", globals(), locals(), [], -1)
 	__import__("lib.db", globals(), locals(), ["DB"], -1)
-	for i in _db:
-		print "importing", i
-		#_db_class[i.capitalize()] = getattr(__import__("lib."+i, globals(), locals(), [], -1))()
-		_db_class[i.capitalize()] = getattr(__import__("lib."+i.lower(), globals(), locals(), [i.capitalize()], -1), i.capitalize())()
+	for db in _db:
+		print "importing", db
+		_db_class[db] = getattr(__import__("lib."+db.lower(), globals(), locals(), [db], -1), db)
 
 	
 	for i, j in DBS.iteritems():
-		_db_spec[i] = _db_class[j['db']]
-		_db_spec[i].set_dir(j['_d'])
+		_db_spec[i] = _db_class[j['db']](j['_d'])
+		if 'port' in j:
+			_db_spec[i].set_port(j['port'])
 	
 	return _db_class, _db_spec
 
@@ -59,7 +59,7 @@ def main(_db_spec):
 	
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	sock.bind(('', port))
-	
+
 	while True:
 		sock.listen(1)
 		conn, addr = sock.accept()
@@ -81,7 +81,7 @@ def main(_db_spec):
 		sleep(2)
 		conn.sendall(result)
 		conn.close()
-
+	
 if __name__ == '__main__':
 	_db_class, _db_spec = init()
 

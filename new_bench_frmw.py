@@ -326,9 +326,9 @@ if __name__ == '__main__':
 	for i in WL:
 		ans = [] 
 		if isinstance(i.threads, xrange):
-			ans = _run_thread(i, DBS, 5)
+			ans = _run_thread(i, DBS, 1)
 		else:
-			ans = _run_time(i, DBS, 5)
+			ans = _run_time(i, DBS, 1)
 		save_dump(i, ans, time.strftime("%Y%m%d_%H%M%S"))
 		try:
 			os.mkdir(out_dir)
