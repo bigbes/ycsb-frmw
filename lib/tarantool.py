@@ -20,6 +20,8 @@ class Tarantool(DB):
 		self._dir = _dir
 		self._run = None
 		self.port = "33013"
+		if not (os.path.exists(self._dir+'/'+self._exe)):
+			raise Exception('No such file or directory in DB: ' + self._dir)
 
 	def __del__(self):
 		self.stop()

@@ -20,6 +20,10 @@ class Redis(DB):
 		self._dir = _dir
 		self._run = None
 		self.port = "3679"
+		if not (os.path.exists(self._dir+'/'+self._exe) and 
+				os.path.exists(self._dir+'/'+self._cli)):
+			raise Exception('No such file or directory in DB: ' + self._dir)
+
 	def __del__(self):
 		self.stop()
 

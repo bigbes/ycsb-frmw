@@ -34,6 +34,9 @@ class MongoDB(DB):
 		self.port = '27017'
 		self._args = deepcopy(self.st_args)
 		self.add_arg(('port', self.port))
+		if not (os.path.exists(self._dir+'/'+self._exe) and 
+				os.path.exists(self._dir+'/'+self._cli)):
+			raise Exception('No such file or directory in DB: ' + self._dir)
 
 	def set_port(self, port):
 		self.port = port
