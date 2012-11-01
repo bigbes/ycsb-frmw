@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import cStringIO
 from pprint import pprint
 
 header = """set output '%(output)s'
@@ -21,8 +22,7 @@ _xrange = """set xrange [0 : %(end)f]
 _yrange = """set yrange [0 : %(end)f]
 """
 
-_plot = """\t'%(file)s' using 1:2 title "%(title)s" with lines \\
-"""
+_plot = """\t'%(file)s' using 1:2 title "%(title)s" with lines"""
 
 __plot = """\t'%(file)s' using 1:2 with lines t "%(title)s", \\
 \t'%(file)s' using 1:2:2 with labels notitle"""
@@ -47,6 +47,13 @@ _obj = { 'svg' : terminal_svg,
 
 
 class Plot:
+	DB = [	('rds', 'Redis'), 
+			('tnt', 'Tarantool'), 
+			('mongo', 'MongoDB'), 
+			('mongodb', 'MongoDB'), 
+			('memcached', 'Memcached')
+			]
+
 	def __init__(self, _file, output, _format = 'svg'):
 		if not _format in _obj:
 			_format = 'svg'
@@ -76,13 +83,18 @@ class Plot:
 		return self
 
 	def add_data(self, _file, title):
-		self.data.append((_file, title))
+		for i in DB:
+			title.replace(i[0], i[1])
+		self.data.append((_file, title.replace('_', ' ')))
 		return self
 
 	def gen_file(self):
 		pprint(self.data)
-		f = '\nplot '
+		f = cStringIO.StringIO()
+		temp = open(self.o_file, 'w')
+		f.write(self._file + '\nplot')
 		for i in self.data[0:-1]:
-			f += _plot % {"file" : str(i[0]), "title" : str(i[1])} + ', \\\n'
-		f += _plot % {"file" : str(self.data[-1][0]), "title" : str(self.data[-1][1])} + '\n'
-		open(self.o_file, 'w').write(self._file + f)
+			f.write(_plot % {"file" : str(i[0]), "title" : str(i[1])} + ', \\\n')
+		f.write(_plot % {"file" : str(self.data[-1][0]), "title" : str(self.data[-1][1])} + '\n')
+		temp.write(f.getvalue())
+		temp.close();f.close();

@@ -52,11 +52,9 @@ class Answers:
 
 class DB_client:
 	params = { 	
-			#'tarantool' : { 'host' : 'tnt.host'  , 'port' : 'tnt.port'  },
-			#'redis'		: { 'host' : 'redis.host', 'port' : 'redis.port'}
 			'tarantool' : ' -p tnt.host=%(host)s -p tnt.port=%(port)d ',
 			'redis' 	: ' -p redis.host=%(host)s -p redis.port=%(port)d ',
-			'mongodb'	: ' -p mongodb.url=mongodb://%(host)s:%(port)d'
+			'mongodb'	: ' -p mongodb.url=mongodb://%(host)s:%(port)d -p mongodb.writeConcern=safe'
 			}
 	def gen_args(self):
 		return self.params[self._type] % {

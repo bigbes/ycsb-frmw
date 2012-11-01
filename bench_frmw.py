@@ -9,13 +9,15 @@ import json
 import os
 import pickle
 import time
-from numpy import var, average
 from subprocess import Popen, PIPE
 from pprint import pprint
 from gnuplot import Plot
 
 from configobj import ConfigObj
 from lib.classes import Workload, Answers, DB_client
+
+def average(_list):
+	return sum(list)/len(list)
 
 args = None
 lol_dir = 0
