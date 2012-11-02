@@ -83,8 +83,8 @@ class Plot:
 		return self
 
 	def add_data(self, _file, title):
-		for i in DB:
-			title.replace(i[0], i[1])
+		for i in self.DB:
+			title = title.replace(i[0], i[1])
 		self.data.append((_file, title.replace('_', ' ')))
 		return self
 

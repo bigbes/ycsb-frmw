@@ -17,7 +17,7 @@ from configobj import ConfigObj
 from lib.classes import Workload, Answers, DB_client
 
 def average(_list):
-	return sum(list)/len(list)
+	return sum(_list)/len(_list)
 
 args = None
 lol_dir = 0
