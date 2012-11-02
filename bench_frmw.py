@@ -136,7 +136,7 @@ def _load_wl(wl, db):
 			name = '',
 			type = 'load',
 			threads = '15',
-			wl = 'workloada',
+			wl = wl.wl,
 			params = wl.params,
 			args = wl.args
 		)
@@ -291,9 +291,9 @@ def gen_gnuplot_files_latency(_ans, OPS):
 		title += 'with ' + ((str(wl.params['operationcount'])+' operations') if wl.type == 'run' else (str(wl.params['recordcount'])+' records'))
 		pprint(name+'\n')
 		pprint(title+'\n')
-		plotfile = Plot(name+'.plot', name, _format='png').set_title(title, 
-				'threads(pcs)' if isinstance(wl.threads, xrange) else 'time(seconds)',
-				'latency(usec)'
+		plotfile = Plot(name+'.plot', name, _format='svg').set_title(title, 
+				'Threads' if isinstance(wl.threads, xrange) else 'Time(sec)',
+				'Latency(usec)'
 				)
 		for i in t_ans:
 			plotfile.add_data(i[0], i[1])
@@ -311,9 +311,9 @@ def gen_gnuplot_files_throughput(_ans, OPS):
 	title += 'with ' + ((str(wl.params['operationcount'])+' operations') if wl.type == 'run' else (str(wl.params['recordcount'])+' records'))
 	pprint(name+'\n')
 	pprint(title+'\n')
-	plotfile = Plot(name+'.plot', name, _format='png').set_title(title, 
-			'threads(pcs)' if isinstance(wl.threads, xrange) else 'time(seconds)',
-			'throughput(ops/sec)'
+	plotfile = Plot(name+'.plot', name, _format='svg').set_title(title, 
+			'Threads' if isinstance(wl.threads, xrange) else 'Time(sec)',
+			'Throughput(ops/sec)'
 			)
 	for i in _ans.base:
 		plotfile.add_data(i[0], i[1])
