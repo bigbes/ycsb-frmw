@@ -24,6 +24,7 @@ class MongoDB(DB):
 			'logpath' 			: './mongodb.log',
 			'bind_ip' 			: '127.0.0.1',
 			'diaglog'			: '3',
+			'logappend'			: '',
 			'nojournal'			: '',
 			'noauth'  			: '',
 			'nohttpinterface' 	: '',

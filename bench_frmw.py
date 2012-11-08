@@ -22,6 +22,8 @@ def average(_list):
 args = None
 lol_dir = 0
 ycsb = []
+trials = 3
+OPS, WL, DBS, ycsb, ARGS, out_dir = (None, None, None, None, None, None)
 
 class YCSB:
 	def __init__(this):
@@ -50,6 +52,10 @@ def parse_cfg():
 	config = ConfigObj(args.file)
 	ops = config['OPS'].keys()	
 	_args = config['ARGS']
+	try:
+		trials = config['trials']
+	except KeyError:
+		pass
 	wl = []
 	for i, j in config['WL'].iteritems():
 		t = j['thread']
@@ -66,7 +72,10 @@ def parse_cfg():
 	dbs = []
 	for i, j in config['NET_DB'].iteritems():
 		if isinstance(j, dict):
-			port = j['serv_port']
+			try:
+				port = j['serv_port']
+			except KeyError:
+				port = 31897
 			db_port = j['db_port']
 			temp = DB_client(i, j['host'], port, db_port, j['_type'])
 			dbs.append(temp)
@@ -121,7 +130,7 @@ def __run(wl, thread, db):
 	progr = shlex.split("bin/ycsb " + wl.type + " " + db._type 
 			+ " -P " + ycsb._d_wl + wl.wl + wl.gen_params() 
 			+ " -threads " + str(thread) + " -s " + wl.gen_args() + db.gen_args())
-	print progr
+	#print progr
 	YCSB = Popen(progr, stdout = PIPE, stderr = PIPE)
 	_stderr = YCSB.communicate()
 	import_stderr(parse_stderr(_stderr[1]))
@@ -148,10 +157,18 @@ def _run_time(wl, dbs, times = 1):
 	for db in dbs:
 		db.init()
 		db.start()
+		sys.stdout.write(db.name+': [')
+		sys.stdout.flush()
 		if (wl.type == 'run'):
+			sys.stdout.write('_')
+			sys.stdout.flush()
 			_load_wl(wl, db)
 		for i in xrange(times):
+			sys.stdout.write('#')
+			sys.stdout.flush()
 			ans.insert(db.name, wl.threads, __run(wl, wl.threads, db))
+		sys.stdout.write('] ')
+		sys.stdout.flush()
 		db.stop()
 	return ans
 	
@@ -160,15 +177,22 @@ def _run_thread(wl, dbs, times = 1):
 	for db in dbs:
 		db.init()
 		db.start()
+		sys.stdout.write(db.name+': [')
+		sys.stdout.flush()
 		if (wl.type == 'run'):
+			sys.stdout.write('_')
+			sys.stdout.flush()
 			_load_wl(wl, db)
 		for thr in wl.threads:
 			for i in xrange(times):
+				sys.stdout.write('#')
+				sys.stdout.flush()
 				ans.insert(db.name, thr, __run(wl, thr, db))
 				if (wl.type == 'load'):
 					db.stop()
 					db.init()
 					db.start()
+		sys.stdout.write(']\n')
 		db.stop()
 	return ans
 
@@ -290,8 +314,8 @@ def gen_gnuplot_files_latency(_ans, OPS):
 		title += "on " + i + " test. "
 		title += (str(wl.threads) + ' threads ' if not isinstance(wl.threads, xrange) else ' ')
 		title += 'with ' + ((str(wl.params['operationcount'])+' operations') if wl.type == 'run' else (str(wl.params['recordcount'])+' records'))
-		pprint(name+'\n')
-		pprint(title+'\n')
+		#pprint(name+'\n')
+		#pprint(title+'\n')
 		plotfile = Plot(name+'.plot', name, _format='svg').set_title(title, 
 				'Threads' if isinstance(wl.threads, xrange) else 'Time(sec)',
 				'Latency(usec)'
@@ -303,15 +327,15 @@ def gen_gnuplot_files_latency(_ans, OPS):
 def gen_gnuplot_files_throughput(_ans, OPS):
 	wl = _ans.wl
 	name = "%(name)s_%(type)s" % {
-			"name" 	: wl.name,
+			"name" 	: wl.name, 
 			"type"  : ('throughput_thr-range' if isinstance(wl.threads, xrange) else 'throughput_time')
 			}
 	title = ("Loading " if wl.type == 'load' else "Running ")
 	title += wl.wl + " "
 	title += (str(wl.threads) + ' threads ' if not isinstance(wl.threads, xrange) else ' ')
 	title += 'with ' + ((str(wl.params['operationcount'])+' operations') if wl.type == 'run' else (str(wl.params['recordcount'])+' records'))
-	pprint(name+'\n')
-	pprint(title+'\n')
+	#pprint(name+'\n')
+	#pprint(title+'\n')
 	plotfile = Plot(name+'.plot', name, _format='svg').set_title(title, 
 			'Threads' if isinstance(wl.threads, xrange) else 'Time(sec)',
 			'Throughput(ops/sec)'
@@ -327,11 +351,15 @@ if __name__ == '__main__':
 	OPS, WL, DBS, ycsb, ARGS, out_dir = parse_cfg()
 	pprint(DBS)
 	for i in WL:
+		sys.stdout.write('Workload %(wl)s, %(tests)s\n' % {
+			'wl'	: i.type + ' ' + i.wl,
+			'tests'	: (len(i.threads) if isinstance(i.threads, xrange) else 1) * trials
+			})
 		ans = [] 
 		if isinstance(i.threads, xrange):
-			ans = _run_thread(i, DBS, 1)
+			ans = _run_thread(i, DBS, trials)
 		else:
-			ans = _run_time(i, DBS, 1)
+			ans = _run_time(i, DBS, trials)
 		save_dump(i, ans, time.strftime("%Y%m%d_%H%M%S"))
 		try:
 			os.mkdir(out_dir)

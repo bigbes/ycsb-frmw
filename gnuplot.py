@@ -83,14 +83,14 @@ class Plot:
 		return self
 
 	def add_data(self, _file, title):
-		title.replace('_', ' ')
+		title = title.replace('_', ' ')
 		for i in self.DB:
 			title = title.replace(i[0], i[1])
 		self.data.append((_file, title))
 		return self
 
 	def gen_file(self):
-		pprint(self.data)
+		#pprint(self.data)
 		f = cStringIO.StringIO()
 		temp = open(self.o_file, 'w')
 		f.write(self._file + '\nplot')
