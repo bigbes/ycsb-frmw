@@ -50,7 +50,6 @@ _obj = { 'svg' : terminal_svg,
 class Plot:
 	DB = [	('rds', 'Redis'), 
 			('tnt', 'Tarantool'), 
-			('mongo', 'MongoDB'), 
 			('mongodb', 'MongoDB'), 
 			('memcached', 'Memcached')
 			]
@@ -84,9 +83,10 @@ class Plot:
 		return self
 
 	def add_data(self, _file, title):
+		title.replace('_', ' ')
 		for i in self.DB:
 			title = title.replace(i[0], i[1])
-		self.data.append((_file, title.replace('_', ' ')))
+		self.data.append((_file, title))
 		return self
 
 	def gen_file(self):

@@ -27,3 +27,5 @@ pip-log.txt
 .mr.developer.cfg
 
 *~
+_bench.cfg
+_db_serv.cfg

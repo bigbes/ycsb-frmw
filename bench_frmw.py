@@ -123,7 +123,8 @@ def __run(wl, thread, db):
 			+ " -threads " + str(thread) + " -s " + wl.gen_args() + db.gen_args())
 	print progr
 	YCSB = Popen(progr, stdout = PIPE, stderr = PIPE)
-	import_stderr(parse_stderr(YCSB.communicate()[1]))
+	_stderr = YCSB.communicate()
+	import_stderr(parse_stderr(_stderr[1]))
 	_json = parse_json(ycsb._f_json)
 	pprint(_json, open('1', 'w'))
 	import_json(_json)

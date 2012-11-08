@@ -11,6 +11,7 @@ import fileinput
 from time import sleep, time
 from subprocess import PIPE, STDOUT, Popen
 from copy import deepcopy
+from pprint import pprint
 
 class MongoDB(DB):
 	_exe = "mongod"
@@ -22,7 +23,8 @@ class MongoDB(DB):
 			'dbpath'  			: './temp',
 			'logpath' 			: './mongodb.log',
 			'bind_ip' 			: '127.0.0.1',
-			'journal' 			: '',
+			'diaglog'			: '3',
+			'nojournal'			: '',
 			'noauth'  			: '',
 			'nohttpinterface' 	: '',
 			'noprealloc' 		: ''
@@ -48,8 +50,10 @@ class MongoDB(DB):
 	@chroot_
 	def cleanup(self):
 		try:
-			os.remove(self._log)
 			shutil.rmtree('temp')
+		except OSError:
+			pass
+		try:
 			os.mkdir('temp')
 		except OSError:
 			pass
@@ -84,7 +88,8 @@ class MongoDB(DB):
 		if self._run:
 			print "<<MongoDB already started."
 		print ">>Starting MongoDB"
-		self._run = Popen(shlex.split("./"+self._exe+self.args_to_str()))
+		args = shlex.split("./"+self._exe+self.args_to_str())
+		self._run = Popen(args)
 		print ">>MongoDB PID:", self._run.pid
 	
 	def stop(self):
