@@ -27,8 +27,8 @@ class MongoDB(DB):
 			'logappend'			: '',
 			'nojournal'			: '',
 			'noauth'  			: '',
-			'nohttpinterface' 	: '',
-			'noprealloc' 		: ''
+			'nohttpinterface' 		: '',
+			'noprealloc' 			: ''
 			}
 
 	def __init__(self, _dir):
@@ -95,7 +95,8 @@ class MongoDB(DB):
 	
 	def stop(self):
 		if self._run:
-			self._run.terminate()
+			self._run.send_signal(2)
+			self._run.wait()
 			print ">>Stopping MongoDB"
 		self._run = None
 
