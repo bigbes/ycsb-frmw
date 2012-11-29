@@ -11,10 +11,10 @@ import pickle
 import time
 from subprocess import Popen, PIPE
 from pprint import pprint
-from gnuplot import Plot
 
 from configobj import ConfigObj
 from lib.classes import Workload, Answers, DB_client
+from lib.gnuplot import Plot
 
 def average(_list):
 	return sum(_list)/len(_list)
