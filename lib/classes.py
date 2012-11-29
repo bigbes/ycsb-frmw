@@ -88,6 +88,7 @@ class DB_client:
 			sock.close()
 		if answer != "OK":
 			pprint(">> " + str(answer))
+			raise Exception(str(answer))
 		else:
 			answer = 0;
 		return str(answer)	

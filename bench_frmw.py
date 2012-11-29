@@ -123,14 +123,14 @@ def __run(wl, thread, db):
 		return [(line.split()[0], line.split()[4]) for line in string.split('\n') if line.find("current ops/sec") != -1]
 	def parse_json(name):
 		return json.loads(("[ " + open(name).read() + " ]").replace("} {", "}, {"))
-	
+
 	_prev_root = os.getcwd()
 	_new_root = ycsb._d
 	os.chdir(_new_root)
 	progr = shlex.split("bin/ycsb " + wl.type + " " + db._type 
 			+ " -P " + ycsb._d_wl + wl.wl + wl.gen_params() 
 			+ " -threads " + str(thread) + " -s " + wl.gen_args() + db.gen_args())
-	#print progr
+
 	YCSB = Popen(progr, stdout = PIPE, stderr = PIPE)
 	_stderr = YCSB.communicate()
 	import_stderr(parse_stderr(_stderr[1]))
@@ -314,8 +314,6 @@ def gen_gnuplot_files_latency(_ans, OPS):
 		title += "on " + i + " test. "
 		title += (str(wl.threads) + ' threads ' if not isinstance(wl.threads, xrange) else ' ')
 		title += 'with ' + ((str(wl.params['operationcount'])+' operations') if wl.type == 'run' else (str(wl.params['recordcount'])+' records'))
-		#pprint(name+'\n')
-		#pprint(title+'\n')
 		plotfile = Plot(name+'.plot', name, _format='svg').set_title(title, 
 				'Threads' if isinstance(wl.threads, xrange) else 'Time(sec)',
 				'Latency(usec)'
@@ -334,11 +332,9 @@ def gen_gnuplot_files_throughput(_ans, OPS):
 	title += wl.wl + " "
 	title += (str(wl.threads) + ' threads ' if not isinstance(wl.threads, xrange) else ' ')
 	title += 'with ' + ((str(wl.params['operationcount'])+' operations') if wl.type == 'run' else (str(wl.params['recordcount'])+' records'))
-	#pprint(name+'\n')
-	#pprint(title+'\n')
 	plotfile = Plot(name+'.plot', name, _format='svg').set_title(title, 
 			'Threads' if isinstance(wl.threads, xrange) else 'Time(sec)',
-			'Throughput(ops/sec)'
+			'RPS'
 			)
 	for i in _ans.base:
 		plotfile.add_data(i[0], i[1])
