@@ -56,12 +56,12 @@ class Plot:
     ]
 
     WLS = [ 
-        ('workloada', 'Workload A'),
-        ('workloadb', 'Workload B'),
-        ('workloadc', 'Workload C'),
-        ('workloadd', 'Workload D'),
-        ('workloade', 'Workload E'),
-        ('workloadf', 'Workload F')
+        ('workloada', 'Workload A', 'A'),
+        ('workloadb', 'Workload B', 'B'),
+        ('workloadc', 'Workload C', 'C'),
+        ('workloadd', 'Workload D', 'D'),
+        ('workloade', 'Workload E', 'E'),
+        ('workloadf', 'Workload F', 'F')
     ]
 
     def __init__(self, _file, output, _format = 'svg'):

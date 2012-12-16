@@ -9,6 +9,7 @@ import json
 import os
 import pickle
 import time
+import csv
 from subprocess import Popen, PIPE
 from pprint import pprint
 
@@ -20,9 +21,7 @@ def average(_list):
 	return sum(_list)/len(_list)
 
 args = None
-lol_dir = 0
-ycsb = []
-trials = 8
+trials = 2
 OPS, WL, DBS, ycsb, ARGS, out_dir = (None, None, None, None, None, None)
 
 class YCSB:
@@ -52,10 +51,6 @@ def parse_cfg():
 	config = ConfigObj(args.file)
 	ops = config['OPS'].keys()	
 	_args = config['ARGS']
-	try:
-		trials = config['trials']
-	except KeyError:
-		pass
 	wl = []
 	for i, j in config['WL'].iteritems():
 		t = j['thread']
@@ -66,7 +61,6 @@ def parse_cfg():
 				t = [int(x) for x in t]
 		else:
 			t = int(t)
-		print t
 		wl.append( 
 				Workload(
 				name = i, 
@@ -140,11 +134,21 @@ def __run(wl, thread, db):
 			+ " -threads " + str(thread) + " -s " + wl.gen_args() + db.gen_args())
 
 	YCSB = Popen(progr, stdout = PIPE, stderr = PIPE)
+
 	_stderr = YCSB.communicate()
-	import_stderr(parse_stderr(_stderr[1]))
-	_json = parse_json(ycsb._f_json)
-	#pprint(_json, open('1', 'w'))
-	import_json(_json)
+
+	try:
+		_json = parse_json(ycsb._f_json)
+		__stderr = parse_stderr(_stderr[1])
+		import_json(_json)
+		import_stderr(__stderr)
+	except:
+		with open("1", 'a') as _file:
+			pprint(_json, _file)
+			pprint(_stderr[0], _file)
+			pprint(_stderr[1], _file)
+		raise
+ 
 	os.chdir(_prev_root)
 
 	return _data
@@ -218,22 +222,9 @@ def plot_latency(wl, Ans, DBS, OPS):
 				if isinstance(wl.threads, (xrange, list, tuple)) and len(wl.threads) != 1:
 					table[str(i3)][i1.name][i2] = average(map(lambda x: x[i2+" AvLatency"], ar))
 				else:
-					time = sorted(reduce(lambda x, y: set(x).union(set(y)), 
-						map(lambda x: x['series '+i2].keys(), ar)), key=int)
-					latency = map(lambda z: average(z), zip(*map(lambda x: map(lambda y: x['series '+i2][y],
-						sorted(x['series '+i2].keys(), key=int)), ar)))
-					table[str(i3)][i1.name][i2] = zip(time, latency)
-					
-					name = "%(name)s_%(db)s_%(op)s_time.data" % { 
-								"name"	: wl.name,
-								"db"	: i1.name,
-								"op"	: i2
-								}
-					fd = open(name ,"w")
-					for i in table[str(i3)][i1.name][i2]:
-						fd.write(str(int(i[0])/1000)+" "+str(i[1])+"\n")
-					local.add_file(name, i1.name, i2)
-					fd.close()
+					time = average(map(lambda x: x[u'RunTime'], ar))
+					latency = average(map(lambda x: x[unicode(i2) + u' AvLatency'], ar))
+					print wl.name + " " + str(i2) + " " + i1.name  + " " + str(time) + " " + str(latency)
 			if isinstance(wl.threads, (list, tuple, xrange)) and len(wl.threads) != 1:
 				if not i2 in table[str(wl.threads[0])][i1.name]:
 					continue
@@ -263,21 +254,9 @@ def plot_throughput(wl, Ans, DBS, OPS):
 			if isinstance(wl.threads, (xrange, list, tuple)) and len(wl.threads) != 1 :
 				table[str(i2)][i1.name] = average(map(lambda x: x["OVERALL Throughput"], ar))
 			else:
-				time = sorted(reduce(lambda x, y: set(x).union(set(y)), 
-					map(lambda x: x['throughput'].keys(), ar)), key=int)
-				throughput = map(lambda z: average(z), zip(*map(lambda x: map(lambda y: x['throughput'][y], 
-					sorted(x['throughput'].keys(), key=int)), ar)))
-				table[str(i2)][i1.name] = zip(time, throughput)
-
-				name = "%(name)s_%(db)s_throughput_time.data" % { 
-							"name"	: wl.name,
-							"db"	: i1.name,
-							}
-				fd = open(name ,"w")
-				for i in table[str(i2)][i1.name]:
-					fd.write(str(int(i[0]))+" "+str(i[1])+"\n")
-				local.add_file(name, i1.name, i2)
-				fd.close()
+				time = average(map(lambda x: x[u'RunTime'], ar))
+				throughput = average(map(lambda x: x[u'OVERALL Throughput'], ar))
+				print wl.name + " " + i1.name + " " + str(time) + " " + str(throughput)
 		if isinstance(wl.threads, (xrange, list, tuple)):
 			table1[i1.name] = zip([k for k in wl.threads], map(lambda x: x[i1.name], 
 				map(lambda y: table[y], sorted(table.keys(), key=int))))
@@ -293,14 +272,6 @@ def plot_throughput(wl, Ans, DBS, OPS):
 	return (table1 if isinstance(wl.threads, (xrange, list, tuple)) else table), local
 
 def save_dump(wl, ans, _str):
-	#f = open(_str+"_hash_dump_wl", 'w')
-	#pickle.dump(wl, f)
-	#f.close()
-
-	#f = open(_str+"_hash_dump", 'w')
-	#f.write(json.dumps(ans._hash))
-	#f.close()
-	
 	f = open(_str+"_repr_dump", 'w')
 	pprint(ans._hash, f)
 	f.close()
@@ -311,18 +282,21 @@ def gen_gnuplot_files_latency(_ans, OPS):
 		t_ans = filter(lambda x: x[2] == i, _ans.base)
 		if len(t_ans) == 0:
 			continue
-		name = "%(name)s_%(op)s_%(type)s" % {
-				"name"	: wl.name,
-				"op"	: i,
-				"type"	: ('thr-range' if isinstance(wl.threads, xrange) else 'time')
-				}
+		if wl.type == 'run' :
+			name = "%(name)s_%(op)s_%(type)s" % {
+					"name"	: (wl.wl[-1]).upper(),
+					"op"	: i,
+					"type"	: "latency"
+					}
+		else : 
+			name = "LOAD_INSERT_latency"
 		title = ("Loading " if wl.type == 'load' else "Running ")
 		title += wl.wl + " "
 		title += "on " + i + " test. "
-		title += (str(wl.threads) + ' threads ' if not isinstance(wl.threads, xrange) else ' ')
+		title += (str(wl.threads) + ' clients ' if not isinstance(wl.threads, xrange) else ' ')
 		title += 'with ' + ((str(wl.params['operationcount'])+' operations') if wl.type == 'run' else (str(wl.params['recordcount'])+' records'))
 		plotfile = Plot(name+'.plot', name, _format='svg').set_title(title, 
-				'Threads' if isinstance(wl.threads, (xrange, tuple, list)) else 'Time(sec)',
+				'Clients' if isinstance(wl.threads, (xrange, tuple, list)) else 'Time(sec)',
 				'Latency(usec)', 
 				wl.threads if isinstance(wl.threads, (tuple, list)) else None
 				)
@@ -332,16 +306,19 @@ def gen_gnuplot_files_latency(_ans, OPS):
 
 def gen_gnuplot_files_throughput(_ans, OPS):
 	wl = _ans.wl
-	name = "%(name)s_%(type)s" % {
-			"name"	: wl.name, 
-			"type"	: ('throughput_thr-range' if isinstance(wl.threads, xrange) else 'throughput_time')
-			}
+	if wl.type == 'run' :
+		name = "%(name)s_%(type)s" % {
+				"name"	: (wl.wl[-1]).upper(),
+				"type"	: "throughput"
+				}
+	else:
+		name = "LOAD_throughput"
 	title = ("Loading " if wl.type == 'load' else "Running ")
 	title += wl.wl + " "
-	title += (str(wl.threads) + ' threads ' if not isinstance(wl.threads, xrange) else ' ')
+	title += (str(wl.threads) + ' clients ' if not isinstance(wl.threads, xrange) else ' ')
 	title += 'with ' + ((str(wl.params['operationcount'])+' operations') if wl.type == 'run' else (str(wl.params['recordcount'])+' records'))
 	plotfile = Plot(name+'.plot', name, _format='svg').set_title(title, 
-			'Threads' if isinstance(wl.threads, (xrange, tuple, list)) else 'Time(sec)',
+			'Clients' if isinstance(wl.threads, (xrange, tuple, list)) else 'Time(sec)',
 			'RPS',	
 			wl.threads if isinstance(wl.threads, (tuple, list)) else None
 			)
@@ -349,7 +326,21 @@ def gen_gnuplot_files_throughput(_ans, OPS):
 		plotfile.add_data(i[0], i[1])
 	plotfile.gen_file()
 
-
+def gen_csv_files(tablelat, tablethr, OPS, wl):
+	xval = map(lambda a: a[0], next(next(tablelat.itervalues()).itervalues()))
+	with open('ycsb.csv', 'a') as csvfile:
+		csvwrite = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL, delimiter=',')
+		csvwrite.writerow([wl.wl, wl.type])
+		csvwrite.writerow(['clients(xaxis)']+xval)
+		for j in OPS:
+			if j not in next(tablelat.itervalues()):
+				break
+			csvwrite.writerow(['(yaxis)Latency '+j])
+			for k, v in tablelat.items():
+				csvwrite.writerow([k]+map(lambda a: a[1], v[j]))
+		csvwrite.writerow(['(yaxis)Throughput'])
+		for k,v in tablethr.items():
+			csvwrite.writerow([k]+map(lambda a: a[1], v))
 
 if __name__ == '__main__':
 	check_arguments()
@@ -371,8 +362,11 @@ if __name__ == '__main__':
 		except OSError:
 			pass
 		os.chdir(out_dir)
-		lol, _ans = plot_latency(i, ans, DBS, OPS)
-		gen_gnuplot_files_latency(_ans, OPS)
-		lol, _ans = plot_throughput(i, ans, DBS, OPS)
-		gen_gnuplot_files_throughput(_ans, OPS)
+		lol_1, _ans = plot_latency(i, ans, DBS, OPS)
+		if not isinstance(i.threads, int):
+			gen_gnuplot_files_latency(_ans, OPS)
+		lol_2, _ans = plot_throughput(i, ans, DBS, OPS)
+		if not isinstance(i.threads, int):
+			gen_gnuplot_files_throughput(_ans, OPS)
+		gen_csv_files(lol_1, lol_2, OPS, _ans.wl)
 		os.chdir('..')
