@@ -35,7 +35,7 @@ class Answers:
             this._hash[str(db)+" "+str(thread)].append(data)
         else:
             this._hash[str(db)+" "+str(thread)] = [data]
-    
+
     def get(this, db, thread):
         return this._hash[str(db)+" "+str(thread)]
 
@@ -47,6 +47,12 @@ class Answers:
             i = i.split()
             for j1 in j:
                 this.insert(i[0], i[1], j1)
+
+    def add_op(self, op):
+        self.op = self.op + op if hasattr(op, self) else [op]
+
+    def get_ops(self):
+        return self.op
 
     __repr__ = __str__
 
