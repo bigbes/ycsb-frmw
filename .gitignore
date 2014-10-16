@@ -29,3 +29,5 @@ pip-log.txt
 *~
 _bench.cfg
 _db_serv.cfg
+*.json
+*.stderr
