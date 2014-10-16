@@ -1,0 +1,74 @@
+---
+operators: # Stiil needed?
+    - 'INSERT'
+    - 'READ'
+    - 'SCAN'
+    - 'DELETE'
+    - 'UPDATE'
+    - 'READ-MODIFY-WRITE'
+options:
+    output : 'graph_output'
+    threads: [16, 32, 64, 128]
+    retries: 3
+    ycsb_parameters:
+        recordcount: 250000
+        operationcount: 500000
+        exportfile: 'ycsb_export.json'
+        exporter: 'com.yahoo.ycsb.measurements.exporter.JSONMeasurementsExporter'
+        measurementtype: 'timeseries'
+        timeseries.granularity: 2000
+    database_parameters:
+        server_host: 'localhost'
+        server_port: 2003
+workloads:
+    load_workload:
+        workload: 'workloada'
+        type: 'load'
+        description: 'Insert only'
+        short_name: 'LOAD'
+    workloada:
+        workload: 'workloada'
+        type: 'run'
+        description: 'Workload A'
+        short_name: 'A'
+#     workloadb:
+#         workload: 'workloadb'
+#         type: 'run'
+#         description: 'Workload B'
+#         short_name: 'B'
+#     workloadc:
+#         workload: 'workloadc'
+#         type: 'run'
+#         description: 'Workload C'
+#         short_name: 'C'
+#     workloadd:
+#         workload: 'workloadd'
+#         type: 'run'
+#         description: 'Workload D'
+#         short_name: 'D'
+#     workloade:
+#         workload: 'workloade'
+#         type: 'run'
+#         description: 'Workload E'
+#         short_name: 'E'
+#         ycsb_parameters:
+#             operationcount: 150000
+#     workloadf:
+#         workload: 'workloadf'
+#         type: 'run'
+#         description: 'Workload F'
+#         short_name: 'F'
+directories:
+    ycsb: "/home/bigbes/ycsb-0.1.4"
+databases:
+    mongodb_2.6.4: {db_type: 'mongodb', db_port: 27017, description: 'MongoDB 2.6.4'}
+    redis_2.8.15:  {db_type: 'redis',   db_port: 6379 , description: 'Redis 2.8.15'}
+    tarantool_hash_g4e1fb3c:
+        db_type: 'tarantool'
+        db_port: 3301
+        description: 'Tarantool with HASH index (g4e1fb3c)'
+    tarantool_tree_g4e1fb3c:
+        db_type: 'tarantool'
+        db_port: 3301
+        description: 'Tarantool with TREE index (g4e1fb3c)'
+...
