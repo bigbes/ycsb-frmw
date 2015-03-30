@@ -171,8 +171,10 @@ class Workload(object):
     def run_time(self, config):
         result = Answers()
         for db in config['databases']:
+            db.stop()
             db.init()
             db.start()
+            time.sleep(1)
             self.load.run_once(config, 16, db)
 
             for i in xrange(config['retries']):
@@ -185,8 +187,10 @@ class Workload(object):
     def run_thread(self, config):
         result = Answers()
         for db in config['databases']:
+            db.stop()
             db.init()
             db.start()
+            time.sleep(1)
             self.load.run_once(config, 16, db)
 
             for threads in self.threads:
@@ -198,7 +202,6 @@ class Workload(object):
                         db.stop()
                         db.init()
                         db.start()
-            db.stop()
         return result
 
     def run(self, config):
@@ -349,7 +352,8 @@ class DBClient(object):
             ('redis.port', '%d'),
         ]),
         'mongodb': collections.OrderedDict([
-            ('mongodb.url', 'mongodb://%s:%d')
+            ('mongodb.url', 'mongodb://%s:%d'),
+            ('mongodb.maxconnections', '260')
 #            ('mongodb.writeConcern', 'safe')
         ])
     }
